@@ -3706,23 +3706,39 @@ html {
 /* ScrollArea component fixes for smooth scrolling */
 [data-radix-scroll-area-viewport] {
   overflow-y: auto !important;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   will-change: scroll-position;
+  display: block !important;
+  height: 100% !important;
+}
+
+/* Ensure ScrollArea root has proper height */
+[data-slot="scroll-area"] {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 /* Ensure content inside ScrollArea is scrollable */
 .max-h-\[calc\(100vh-12rem\)\] {
-  max-height: calc(100vh - 12rem);
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: calc(100vh - 12rem) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.max-h-\[calc\(100vh-12rem\)\] > [data-slot="scroll-area"] {
+  height: 100% !important;
+  flex: 1 !important;
 }
 
 @media (max-width: 768px) {
   .max-h-\[calc\(100vh-12rem\)\] {
-    max-height: calc(85vh - 8rem);
+    max-height: calc(85vh - 8rem) !important;
   }
 }
 
@@ -3773,6 +3789,18 @@ html {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+/* Fix for ScrollArea viewport content */
+[data-slot="scroll-area-viewport"] {
+  height: 100% !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+[data-slot="scroll-area-viewport"] > div {
+  min-height: min-content !important;
 }
 
 /* Ensure grid layouts don't break scrolling */
@@ -3783,7 +3811,12 @@ html {
 /* Fix for nested scrollable areas */
 .space-y-8 {
   width: 100%;
-  height: 100%;
+  min-height: min-content;
+}
+
+/* Ensure p-6 padding container doesn't prevent scrolling */
+.p-6 {
+  min-height: min-content;
 }
 
 /* Smooth momentum scrolling for all platforms */
@@ -3865,4 +3898,30 @@ html {
   .lg\:-ml-48 {
     margin-left: -12rem !important;
   }
+}
+
+
+/* Critical fix: Ensure ScrollArea has explicit height */
+.glass-panel [data-slot="scroll-area"] {
+  height: calc(100vh - 12rem) !important;
+  max-height: calc(100vh - 12rem) !important;
+}
+
+@media (max-width: 768px) {
+  .glass-panel [data-slot="scroll-area"] {
+    height: calc(85vh - 8rem) !important;
+    max-height: calc(85vh - 8rem) !important;
+  }
+}
+
+/* Ensure the viewport scrolls properly */
+.glass-panel [data-radix-scroll-area-viewport] > div {
+  display: block !important;
+  padding-bottom: 2rem;
+}
+
+/* Fix for photo gallery overlay */
+.glass-panel .space-y-8.p-6 {
+  display: block !important;
+  width: 100% !important;
 }
