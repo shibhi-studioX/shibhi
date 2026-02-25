@@ -3674,11 +3674,14 @@ html {
 .overflow-auto {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Glass panel overlay responsive sizing */
 .glass-panel {
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 768px) {
@@ -3698,6 +3701,29 @@ html {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* ScrollArea component fixes for smooth scrolling */
+[data-radix-scroll-area-viewport] {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* Ensure content inside ScrollArea is scrollable */
+.max-h-\[calc\(100vh-12rem\)\] {
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .max-h-\[calc\(100vh-12rem\)\] {
+    max-height: calc(85vh - 8rem);
+  }
 }
 
 /* Custom scrollbar styling for better UX */
@@ -3720,21 +3746,81 @@ html {
 .overflow-x-auto::-webkit-scrollbar-thumb,
 .overflow-auto::-webkit-scrollbar-thumb,
 .flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .overflow-y-auto::-webkit-scrollbar,
+  .overflow-x-auto::-webkit-scrollbar,
+  .overflow-auto::-webkit-scrollbar,
+  .flex-1.overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  /* Adjust padding for mobile */
+  .glass-panel .space-y-8 {
+    padding: 1rem;
+  }
+  
+  /* Enhanced touch scrolling for mobile */
+/* Smooth aspect ratio transitions */
+[style*="aspectRatio"] {
+  transition: all 0.3s ease;
 }
 
-.overflow-y-auto::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover,
-.overflow-auto::-webkit-scrollbar-thumb:hover,
-.flex-1.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+/* Category overlay scrolling improvements */
+.glass-panel > div:last-child {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Dark mode scrollbar */
-.dark .overflow-y-auto::-webkit-scrollbar-thumb,
-.dark .overflow-x-auto::-webkit-scrollbar-thumb,
-.dark .overflow-auto::-webkit-scrollbar-thumb,
+/* Ensure grid layouts don't break scrolling */
+.grid {
+  width: 100%;
+}
+
+/* Fix for nested scrollable areas */
+.space-y-8 {
+  width: 100%;
+  height: 100%;
+}
+
+/* Smooth momentum scrolling for all platforms */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.overflow-y-auto,
+.overflow-x-auto,
+.overflow-auto,
+[data-radix-scroll-area-viewport] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Firefox scrollbar styling */
+@supports (scrollbar-width: thin) {
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto,
+  [data-radix-scroll-area-viewport] {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+} [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+  
+  /* Prevent body scroll when overlay is open on mobile */
+  body.overlay-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+}dark .overflow-auto::-webkit-scrollbar-thumb,
 .dark .flex-1.overflow-y-auto::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
