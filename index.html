@@ -10,5 +10,130 @@
 <body>
   <div id="root"></div>
   <script type="module" src="index-D6tZokQs.js"></script>
+  <script>
+    // Background Slideshow Handler
+    (function() {
+      'use strict';
+      
+      const SLIDESHOW_INTERVAL = 20000; // 20 seconds
+      const FADE_DURATION = 1000; // 1 second
+      
+      // Background image paths
+      const backgroundPaths = [
+        './bg1.jpg',
+        './bg2.jpg',
+        './bg3.jpg',
+        './bg4.jpg',
+        './bg5.jpg',
+        './bg6.jpg',
+        './bg7.jpg',
+        './bg8.jpg',
+        './bg9.jpg',
+        './bg10.jpg'
+      ];
+      
+      let availableBackgrounds = [];
+      let currentIndex = 0;
+      let bgLayer1, bgLayer2;
+      let isLayer1Active = true;
+      
+      // Check which backgrounds are available
+      async function checkAvailableBackgrounds() {
+        const promises = backgroundPaths.map(path => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(path);
+            img.onerror = () => resolve(null);
+            img.src = path;
+          });
+        });
+        
+        const results = await Promise.all(promises);
+        availableBackgrounds = results.filter(path => path !== null);
+        
+        // Fallback to original background if no bg1-bg10 found
+        if (availableBackgrounds.length === 0) {
+          availableBackgrounds = ['./bg.png'];
+        }
+        
+        return availableBackgrounds;
+      }
+      
+      // Initialize slideshow
+      async function initSlideshow() {
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          await new Promise(resolve => {
+            document.addEventListener('DOMContentLoaded', resolve);
+          });
+        }
+        
+        // Wait a bit for React to render
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Find the background container
+        const container = document.querySelector('.relative.min-h-screen.w-full.overflow-hidden');
+        if (!container) {
+          console.warn('Background container not found, retrying...');
+          setTimeout(initSlideshow, 1000);
+          return;
+        }
+        
+        // Check available backgrounds
+        await checkAvailableBackgrounds();
+        
+        if (availableBackgrounds.length <= 1) {
+          console.log('Only one background available, slideshow disabled');
+          return;
+        }
+        
+        console.log(`Found ${availableBackgrounds.length} backgrounds for slideshow`);
+        
+        // Find existing background layers
+        const existingBg = container.querySelector('.fixed.inset-0.z-0');
+        if (!existingBg) {
+          console.warn('Background element not found');
+          return;
+        }
+        
+        // Create two layers for crossfade
+        bgLayer1 = existingBg;
+        bgLayer1.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+        bgLayer1.style.backgroundImage = `url(${availableBackgrounds[0]})`;
+        
+        bgLayer2 = bgLayer1.cloneNode(true);
+        bgLayer2.style.opacity = '0';
+        bgLayer2.style.backgroundImage = `url(${availableBackgrounds[1] || availableBackgrounds[0]})`;
+        container.insertBefore(bgLayer2, bgLayer1.nextSibling);
+        
+        // Start slideshow
+        startSlideshow();
+      }
+      
+      function startSlideshow() {
+        setInterval(() => {
+          currentIndex = (currentIndex + 1) % availableBackgrounds.length;
+          const nextBg = availableBackgrounds[currentIndex];
+          
+          if (isLayer1Active) {
+            // Fade to layer 2
+            bgLayer2.style.backgroundImage = `url(${nextBg})`;
+            bgLayer1.style.opacity = '0';
+            bgLayer2.style.opacity = '1';
+          } else {
+            // Fade to layer 1
+            bgLayer1.style.backgroundImage = `url(${nextBg})`;
+            bgLayer2.style.opacity = '0';
+            bgLayer1.style.opacity = '1';
+          }
+          
+          isLayer1Active = !isLayer1Active;
+        }, SLIDESHOW_INTERVAL);
+      }
+      
+      // Start when page loads
+      initSlideshow();
+    })();
+  </script>
 </body>
 </html>
