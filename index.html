@@ -36,8 +36,9 @@
       let currentIndex = 0;
       let bgLayer1, bgLayer2;
       let isLayer1Active = true;
+      let initialized = false;
       
-      // Check which backgrounds are available
+      // Check which backgrounds are available (silently)
       async function checkAvailableBackgrounds() {
         const promises = backgroundPaths.map(path => {
           return new Promise((resolve) => {
@@ -45,94 +46,112 @@
             img.onload = () => resolve(path);
             img.onerror = () => resolve(null);
             img.src = path;
+            // Set timeout to avoid hanging
+            setTimeout(() => resolve(null), 3000);
           });
         });
         
         const results = await Promise.all(promises);
         availableBackgrounds = results.filter(path => path !== null);
         
-        // Fallback to original background if no bg1-bg10 found
-        if (availableBackgrounds.length === 0) {
-          availableBackgrounds = ['./bg.png'];
-        }
-        
         return availableBackgrounds;
       }
       
       // Initialize slideshow
       async function initSlideshow() {
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-          await new Promise(resolve => {
-            document.addEventListener('DOMContentLoaded', resolve);
-          });
+        if (initialized) return;
+        
+        try {
+          // Wait for DOM to be ready
+          if (document.readyState === 'loading') {
+            await new Promise(resolve => {
+              document.addEventListener('DOMContentLoaded', resolve);
+            });
+          }
+          
+          // Wait for React to render
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Find the background container
+          const container = document.querySelector('.relative.min-h-screen.w-full.overflow-hidden');
+          if (!container) {
+            return; // Silently fail if container not found
+          }
+          
+          // Check available backgrounds
+          await checkAvailableBackgrounds();
+          
+          if (availableBackgrounds.length <= 1) {
+            return; // Not enough backgrounds for slideshow
+          }
+          
+          // Find existing background layer
+          const existingBg = container.querySelector('.fixed.inset-0.z-0');
+          if (!existingBg) {
+            return; // Silently fail if background not found
+          }
+          
+          // Mark as initialized
+          initialized = true;
+          
+          // Set up first background
+          bgLayer1 = existingBg;
+          bgLayer1.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+          bgLayer1.style.backgroundImage = `url(${availableBackgrounds[0]})`;
+          bgLayer1.style.willChange = 'opacity';
+          
+          // Create second layer for crossfade
+          bgLayer2 = document.createElement('div');
+          bgLayer2.className = existingBg.className;
+          bgLayer2.style.cssText = existingBg.style.cssText;
+          bgLayer2.style.opacity = '0';
+          bgLayer2.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+          bgLayer2.style.backgroundImage = `url(${availableBackgrounds[1] || availableBackgrounds[0]})`;
+          bgLayer2.style.willChange = 'opacity';
+          
+          // Insert second layer after first
+          existingBg.parentNode.insertBefore(bgLayer2, existingBg.nextSibling);
+          
+          // Start slideshow
+          startSlideshow();
+        } catch (error) {
+          console.error('Slideshow initialization error:', error);
         }
-        
-        // Wait a bit for React to render
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Find the background container
-        const container = document.querySelector('.relative.min-h-screen.w-full.overflow-hidden');
-        if (!container) {
-          console.warn('Background container not found, retrying...');
-          setTimeout(initSlideshow, 1000);
-          return;
-        }
-        
-        // Check available backgrounds
-        await checkAvailableBackgrounds();
-        
-        if (availableBackgrounds.length <= 1) {
-          console.log('Only one background available, slideshow disabled');
-          return;
-        }
-        
-        console.log(`Found ${availableBackgrounds.length} backgrounds for slideshow`);
-        
-        // Find existing background layers
-        const existingBg = container.querySelector('.fixed.inset-0.z-0');
-        if (!existingBg) {
-          console.warn('Background element not found');
-          return;
-        }
-        
-        // Create two layers for crossfade
-        bgLayer1 = existingBg;
-        bgLayer1.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
-        bgLayer1.style.backgroundImage = `url(${availableBackgrounds[0]})`;
-        
-        bgLayer2 = bgLayer1.cloneNode(true);
-        bgLayer2.style.opacity = '0';
-        bgLayer2.style.backgroundImage = `url(${availableBackgrounds[1] || availableBackgrounds[0]})`;
-        container.insertBefore(bgLayer2, bgLayer1.nextSibling);
-        
-        // Start slideshow
-        startSlideshow();
       }
       
       function startSlideshow() {
         setInterval(() => {
-          currentIndex = (currentIndex + 1) % availableBackgrounds.length;
-          const nextBg = availableBackgrounds[currentIndex];
+          if (!bgLayer1 || !bgLayer2 || !initialized) return;
           
-          if (isLayer1Active) {
-            // Fade to layer 2
-            bgLayer2.style.backgroundImage = `url(${nextBg})`;
-            bgLayer1.style.opacity = '0';
-            bgLayer2.style.opacity = '1';
-          } else {
-            // Fade to layer 1
-            bgLayer1.style.backgroundImage = `url(${nextBg})`;
-            bgLayer2.style.opacity = '0';
-            bgLayer1.style.opacity = '1';
+          try {
+            currentIndex = (currentIndex + 1) % availableBackgrounds.length;
+            const nextBg = availableBackgrounds[currentIndex];
+            
+            if (isLayer1Active) {
+              // Fade to layer 2
+              bgLayer2.style.backgroundImage = `url(${nextBg})`;
+              bgLayer1.style.opacity = '0';
+              bgLayer2.style.opacity = '1';
+            } else {
+              // Fade to layer 1
+              bgLayer1.style.backgroundImage = `url(${nextBg})`;
+              bgLayer2.style.opacity = '0';
+              bgLayer1.style.opacity = '1';
+            }
+            
+            isLayer1Active = !isLayer1Active;
+          } catch (error) {
+            console.error('Slideshow transition error:', error);
           }
-          
-          isLayer1Active = !isLayer1Active;
         }, SLIDESHOW_INTERVAL);
       }
       
       // Start when page loads
-      initSlideshow();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSlideshow);
+      } else {
+        initSlideshow();
+      }
     })();
   </script>
 </body>
